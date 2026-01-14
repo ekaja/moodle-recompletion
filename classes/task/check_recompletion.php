@@ -343,6 +343,10 @@ class check_recompletion extends \core\task\scheduled_task {
         if ($config->deletegradedata) {
             if ($items = \grade_item::fetch_all(array('courseid' => $course->id))) {
                 foreach ($items as $item) {
+                    // Skip grade items without a valid course module (course total, category, etc.)
+                    if (empty($item->itemmodule) || empty($item->iteminstance)) {
+                        continue;
+                    }
                     if ($grades = \grade_grade::fetch_all(array('userid' => $userid, 'itemid' => $item->id))) {
                         foreach ($grades as $grade) {
                             $grade->delete('local_recompletion');
