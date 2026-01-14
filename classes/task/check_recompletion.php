@@ -343,6 +343,19 @@ class check_recompletion extends \core\task\scheduled_task {
         if ($config->deletegradedata) {
             if ($items = \grade_item::fetch_all(array('courseid' => $course->id))) {
                 foreach ($items as $item) {
+                    // Only process activity grade items (skip course total, category, manual, etc.)
+                    if ($item->itemtype !== 'mod') {
+                        continue;
+                    }
+                    // Skip if no module info
+                    if (empty($item->itemmodule) || empty($item->iteminstance)) {
+                        continue;
+                    }
+                    // Skip if course module doesn't exist (orphan grade item)
+                    $cm = get_coursemodule_from_instance($item->itemmodule, $item->iteminstance, $course->id, false, IGNORE_MISSING);
+                    if (!$cm) {
+                        continue;
+                    }
                     if ($grades = \grade_grade::fetch_all(array('userid' => $userid, 'itemid' => $item->id))) {
                         foreach ($grades as $grade) {
                             $grade->delete('local_recompletion');
