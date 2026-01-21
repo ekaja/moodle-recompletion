@@ -60,13 +60,21 @@ class check_recompletion extends \core\task\scheduled_task {
             return;
         }
 
-        $sql = "SELECT cc.userid, cc.course
-            FROM {course_completions} cc
-            JOIN {local_recompletion_config} r ON r.course = cc.course AND r.name = 'enable' AND r.value = '1'
-            JOIN {local_recompletion_config} r2 ON r2.course = cc.course AND r2.name = 'recompletionduration'
-            JOIN {course} c ON c.id = cc.course
-            WHERE c.enablecompletion = ".COMPLETION_ENABLED." AND cc.timecompleted > 0 AND
-            (cc.timecompleted + ".$DB->sql_cast_char2int('r2.value').") < ?";
+        // Changed to use certificate issued date instead of course completion date.
+        // Get users who have received a certificate and the certificate was issued
+        // longer ago than the recompletion duration.
+        $sql = "SELECT sub.userid, sub.course
+            FROM (
+                SELECT ci.userid, cert.course, MAX(ci.timecreated) as latest_cert
+                FROM {customcert_issues} ci
+                JOIN {customcert} cert ON cert.id = ci.customcertid
+                GROUP BY ci.userid, cert.course
+            ) sub
+            JOIN {local_recompletion_config} r ON r.course = sub.course AND r.name = 'enable' AND r.value = '1'
+            JOIN {local_recompletion_config} r2 ON r2.course = sub.course AND r2.name = 'recompletionduration'
+            JOIN {course} c ON c.id = sub.course
+            WHERE c.enablecompletion = ".COMPLETION_ENABLED." AND sub.latest_cert > 0 AND
+            (sub.latest_cert + ".$DB->sql_cast_char2int('r2.value').") < ?";
         $users = $DB->get_recordset_sql($sql, array(time()));
         $courses = array();
         $configs = array();
