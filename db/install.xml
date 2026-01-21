@@ -145,5 +145,24 @@
         <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_recompletion_cert" COMMENT="Archive of customcert_issues table for recompletion">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="User ID"/>
+        <FIELD NAME="customcertid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Original customcert ID"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course ID"/>
+        <FIELD NAME="originalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Original ID from customcert_issues"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="When certificate was originally issued"/>
+        <FIELD NAME="timearchived" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="When this record was archived"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
+        <INDEX NAME="customcertid" UNIQUE="false" FIELDS="customcertid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>
