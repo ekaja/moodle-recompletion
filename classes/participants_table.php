@@ -206,6 +206,10 @@ class participants_table extends \table_sql {
             // Add "Days until reset" column.
             $headers[] = get_string('daysuntilreset', 'local_recompletion');
             $columns[] = 'daysuntilreset';
+
+            // Add "Certificate history" column.
+            $headers[] = get_string('certificatehistory', 'local_recompletion');
+            $columns[] = 'certhistory';
         }
 
         $headers[] = get_string('coursecompletion');
@@ -225,6 +229,7 @@ class participants_table extends \table_sql {
         $this->no_sorting('select');
         $this->no_sorting('roles');
         $this->no_sorting('daysuntilreset');
+        $this->no_sorting('certhistory');
         if ($canseegroups) {
             $this->no_sorting('groups');
         }
@@ -367,6 +372,32 @@ class participants_table extends \table_sql {
         } else {
             return $daysremaining . ' ' . get_string('days', 'local_recompletion');
         }
+    }
+
+    /**
+     * Generate the certificate history column.
+     *
+     * @param \stdClass $data
+     * @return string
+     */
+    public function col_certhistory($data) {
+        global $DB;
+
+        // Count archived certificates for this user in this course.
+        $count = $DB->count_records('local_recompletion_cert', array(
+            'userid' => $data->id,
+            'course' => $this->course->id
+        ));
+
+        if ($count > 0) {
+            $url = new \moodle_url('/local/recompletion/certhistory.php', array(
+                'id' => $this->course->id,
+                'user' => $data->id
+            ));
+            return '<a href="' . $url . '">' . get_string('viewcerthistory', 'local_recompletion', $count) . '</a>';
+        }
+
+        return '-';
     }
 
     /**

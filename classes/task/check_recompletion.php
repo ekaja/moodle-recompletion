@@ -286,6 +286,49 @@ class check_recompletion extends \core\task\scheduled_task {
     }
 
     /**
+     * Archive and delete certificate records.
+     * @param \int $userid - user id
+     * @param \stdClass $course - course record.
+     * @param \stdClass $config - recompletion config.
+     */
+    protected function reset_certificate($userid, $course, $config) {
+        global $DB;
+
+        // Get all customcert instances in this course.
+        $customcerts = $DB->get_records('customcert', array('course' => $course->id));
+        if (empty($customcerts)) {
+            return;
+        }
+
+        $customcertids = array_keys($customcerts);
+        list($insql, $inparams) = $DB->get_in_or_equal($customcertids);
+        $params = array_merge(array($userid), $inparams);
+
+        // Get certificate issues for this user in this course.
+        $sql = "SELECT * FROM {customcert_issues} WHERE userid = ? AND customcertid $insql";
+        $issues = $DB->get_records_sql($sql, $params);
+
+        if (!empty($issues)) {
+            // Archive the certificate issues.
+            $now = time();
+            foreach ($issues as $issue) {
+                $archiverecord = new \stdClass();
+                $archiverecord->userid = $issue->userid;
+                $archiverecord->customcertid = $issue->customcertid;
+                $archiverecord->course = $course->id;
+                $archiverecord->originalid = $issue->id;
+                $archiverecord->timecreated = $issue->timecreated;
+                $archiverecord->timearchived = $now;
+                $DB->insert_record('local_recompletion_cert', $archiverecord);
+            }
+
+            // Delete the certificate issues.
+            $deletesql = "userid = ? AND customcertid $insql";
+            $DB->delete_records_select('customcert_issues', $deletesql, $params);
+        }
+    }
+
+    /**
      * Notify user of recompletion.
      * @param \int $userid - user id
      * @param \stdclass $course - record from course table.
@@ -377,6 +420,9 @@ class check_recompletion extends \core\task\scheduled_task {
         $this->reset_quiz($userid, $course, $config);
         $this->reset_scorm($userid, $course, $config);
         $errors = $this->reset_assign($userid, $course, $config);
+
+        // Archive and delete certificate data.
+        $this->reset_certificate($userid, $course, $config);
 
         // Now notify user.
         $this->notify_user($userid, $course, $config);
