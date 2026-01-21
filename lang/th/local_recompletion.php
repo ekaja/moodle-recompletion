@@ -128,3 +128,6 @@ $string['defaultsettings'] = 'การตั้งค่าเริ่มต�
 $string['archivequizdata'] = 'เก็บข้อมูลแบบทดสอบเก่า';
 $string['archivescormdata'] = 'เก็บข้อมูล SCORM เก่า';
 $string['certificateissued'] = 'ออก Certificate เมื่อ';
+$string['daysuntilreset'] = 'จะถูก Reset อีก';
+$string['days'] = 'วัน';
+$string['alreadyexpired'] = 'ครบกำหนดแล้ว';

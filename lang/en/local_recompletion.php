@@ -130,3 +130,6 @@ $string['defaultsettings'] = 'Recompletion default settings';
 $string['archivequizdata'] = 'Archive old quiz attempts';
 $string['archivescormdata'] = 'Archive old SCORM attempts';
 $string['certificateissued'] = 'Certificate issued';
+$string['daysuntilreset'] = 'Days until reset';
+$string['days'] = 'days';
+$string['alreadyexpired'] = 'Expired';

@@ -134,6 +134,11 @@ class participants_table extends \table_sql {
      */
     protected $recompletionenabled;
 
+    /**
+     * @var int Recompletion duration in seconds.
+     */
+    protected $recompletionduration;
+
     /** @var \stdClass[] $viewableroles */
     private $viewableroles;
 
@@ -197,6 +202,10 @@ class participants_table extends \table_sql {
             // Changed from last course access to certificate issued date.
             $headers[] = get_string('certificateissued', 'local_recompletion');
             $columns[] = 'lastaccess';
+
+            // Add "Days until reset" column.
+            $headers[] = get_string('daysuntilreset', 'local_recompletion');
+            $columns[] = 'daysuntilreset';
         }
 
         $headers[] = get_string('coursecompletion');
@@ -215,6 +224,7 @@ class participants_table extends \table_sql {
 
         $this->no_sorting('select');
         $this->no_sorting('roles');
+        $this->no_sorting('daysuntilreset');
         if ($canseegroups) {
             $this->no_sorting('groups');
         }
@@ -233,6 +243,8 @@ class participants_table extends \table_sql {
         $this->context = $context;
         $this->recompletionenabled = $DB->get_field('local_recompletion_config',
             'value', array('course' => $this->course->id, 'name' => 'enable'));
+        $this->recompletionduration = $DB->get_field('local_recompletion_config',
+            'value', array('course' => $this->course->id, 'name' => 'recompletionduration'));
         if ($canseegroups) {
             $this->groups = groups_get_all_groups($courseid, 0, 0, 'g.*', true);
         }
@@ -327,6 +339,34 @@ class participants_table extends \table_sql {
         }
 
         return '-';
+    }
+
+    /**
+     * Generate the days until reset column.
+     *
+     * @param \stdClass $data
+     * @return string
+     */
+    public function col_daysuntilreset($data) {
+        // If no certificate issued or recompletion not enabled, show "-".
+        if (empty($data->lastaccess) || empty($this->recompletionduration)) {
+            return '-';
+        }
+
+        // Calculate expiry date: certificate date + recompletion duration.
+        $expirydate = $data->lastaccess + $this->recompletionduration;
+        $now = time();
+        $daysremaining = floor(($expirydate - $now) / 86400);
+
+        if ($daysremaining < 0) {
+            // Already expired.
+            return '<span style="color: red;">' . get_string('alreadyexpired', 'local_recompletion') . '</span>';
+        } else if ($daysremaining <= 30) {
+            // Expiring soon (within 30 days).
+            return '<span style="color: orange;">' . $daysremaining . ' ' . get_string('days', 'local_recompletion') . '</span>';
+        } else {
+            return $daysremaining . ' ' . get_string('days', 'local_recompletion');
+        }
     }
 
     /**
