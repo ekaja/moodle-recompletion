@@ -194,11 +194,8 @@ class participants_table extends \table_sql {
 
         // Do not show the columns if it exists in the hiddenfields array.
         if (!isset($hiddenfields['lastaccess'])) {
-            if ($courseid == SITEID) {
-                $headers[] = get_string('lastsiteaccess');
-            } else {
-                $headers[] = get_string('lastcourseaccess');
-            }
+            // Changed from last course access to certificate issued date.
+            $headers[] = get_string('certificateissued', 'local_recompletion');
             $columns[] = 'lastaccess';
         }
 
@@ -319,17 +316,17 @@ class participants_table extends \table_sql {
     }
 
     /**
-     * Generate the last access column.
+     * Generate the certificate issued column.
      *
      * @param \stdClass $data
      * @return string
      */
     public function col_lastaccess($data) {
         if ($data->lastaccess) {
-            return format_time(time() - $data->lastaccess);
+            return userdate($data->lastaccess, get_string('strftimedatetimeshort', 'langconfig'));
         }
 
-        return get_string('never');
+        return '-';
     }
 
     /**
@@ -512,10 +509,17 @@ class participants_table extends \table_sql {
                 $wheres[] = user_get_user_lastaccess_sql($accesssince);
             }
         } else {
-            $select = "SELECT $userfieldssql, COALESCE(ul.timeaccess, 0) AS lastaccess";
+            // Changed to get certificate issued date instead of last course access.
+            $select = "SELECT $userfieldssql, COALESCE(cert.timecreated, 0) AS lastaccess";
             $joins[] = "JOIN ($esql) e ON e.id = u.id"; // Course enrolled users only.
-            // Not everybody has accessed the course yet.
-            $joins[] = 'LEFT JOIN {user_lastaccess} ul ON (ul.userid = u.id AND ul.courseid = :courseid)';
+            // Join with customcert_issues to get certificate issued date.
+            $joins[] = 'LEFT JOIN (
+                SELECT ci.userid, MAX(ci.timecreated) as timecreated
+                FROM {customcert_issues} ci
+                JOIN {customcert} c ON c.id = ci.customcertid
+                WHERE c.course = :courseid
+                GROUP BY ci.userid
+            ) cert ON cert.userid = u.id';
             $params['courseid'] = $courseid;
             if ($accesssince) {
                 $wheres[] = user_get_course_lastaccess_sql($accesssince);
